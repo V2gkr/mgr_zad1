@@ -43,5 +43,5 @@ satellite_path=TotalTime*V_satelite;
 LOS=[satelite_location(1)-object_location(1),satelite_location(2)-object_location(2),satelite_location(3)-object_location(3)];
 LOS_1=LOS/norm(LOS);
 %relative velocity along the line of sight
-V_rel=
+V_rel=V_satelite*LOS_1';
 
