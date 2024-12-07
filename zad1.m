@@ -2,11 +2,12 @@
 clear;clc;
 
 %% signal parameters
-f_sin=1e6;%1MHz
-lambda=physconst('LightSpeed')/f_sin;
+f_sin=1e9;%1MHz
+c=physconst('LightSpeed');
+lambda=c/f_sin;
 A=1;%1V
 pulseDuration=100e-6; %100us
-PRF=1e-3;%1 ms
+PRI=0.1e-3;%1 ms
 TotalTime=100e-3;%10ms
 f_sample=50e6;%50MHz
 
@@ -24,7 +25,7 @@ t=0:1/f_sample:TotalTime;
 t_signal=0:1/f_sample:pulseDuration;
 signal=A*sin(2*pi*f_sin*t_signal);
 
-imp_time=0:PRF:TotalTime;
+imp_time=0:PRI:TotalTime;
 
 pulse=pulstran(t,imp_time,signal,f_sample);
 
@@ -34,7 +35,7 @@ plot(t,pulse);
 
 %%
 % number of samples
-N=TotalTime/PRF;
+N=TotalTime/PRI;
 % N samples of reflected signal
 
 %satellites travaled distance for 10ms - 10km
@@ -46,22 +47,27 @@ satellite_path=TotalTime*V_satelite;
 %V_rel=V_satelite*LOS_1';
 
 f_doppler=zeros(1,N);
+s=zeros(1,N);
 for i=1:N
     %distance between satellite and object
-    d=satelite_location-object_location;
+    distance=object_location-satelite_location+V_satelite*i*PRI;
+    %d=satelite_location-object_location;
     %distance between satellite and object in i-th moment
-    d_norm=norm(satelite_location+V_satelite*i*PRF-object_location);
-    d_i=d/d_norm;
+    d_norm=norm(distance);
+    d_i=distance/d_norm;
     %relative velocity in i-th moment
     V_rel=V_satelite*d_i';
-    %V_rel_i=V_satelite*i*PRF*LOS_1';
+    
     %doppler shift in i-th moment
-    %f_doppler(i)=f_sin*(d_i-d)/d-V_rel_i/physconst('LightSpeed');
-    f_doppler(i)=(2*V_rel*f_sin)/physconst('LightSpeed');
-
+    f_doppler(i)=(2*V_rel*f_sin)/c;
+    s(i)=exp((1i*4*pi*d_norm)/lambda);
 end
 
 %plot
 figure;
 plot(f_doppler);
 %this is a doppler shift for each measurement . Smallest one on the 50 km , where the target is
+figure;
+plot(real(s));
+hold on;
+plot(imag(s));
