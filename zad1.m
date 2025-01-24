@@ -11,21 +11,21 @@ B=2e6;%bandwidth in hz
 %modulation index
 mi=B/pulseDuration;
 %max range
-Rmax=30e3;
+Rmax=100e3;
 %pulse range time
 PRI=0.1e-3;%1 ms
 %total time of simulation
-TotalTime=100e-3;%10ms
+TotalTime=10e-3;%10ms
 %sample time & frequency
 f_sample=4e6;%50MHz
 t_sample=1/f_sample;
 %range resolution
 dR=c/(2*f_sample);
 %% point parameter - location & RCS
-object_location=[20,20,0]; %x,y,z in km
+object_location=[1e3,1e3,0]; %x,y,z in km
 object_RCS=0.5;
 %satelite parameters - location & movement speed
-satelite_location=[0,0,100]; %x,y,z in km
+satelite_location=[0,0,100e3]; %x,y,z in km
 V_satelite=[0,1000,0]; %1km/s
 %satellite is moving in the direction of y axis 
 
@@ -46,18 +46,18 @@ signal=exp(2i*pi*(mi*timp-mi*pulseDuration).*timp/2);
 % number of samples
 N=TotalTime/PRI;
 %calculating num of samples per period
-ileprob=floor(Rmax/dR);
+N_sample=floor(Rmax/dR);
 %to save the number of samples in one pulse
-probe_per_pulse=ileprob; 
+sample_per_pulse=N_sample; 
 %scaling to number of measurements
-ileprob=ileprob*N;
-tabdelt=zeros(1,ileprob);
+N_sample=N_sample*N;
+tabdelt=zeros(1,N_sample);
 %satellites travaled distance for 10ms - 10km
 satellite_path=TotalTime*V_satelite;
 %% echo , freq and phase calculation
 f_doppler=zeros(1,N);
 s=zeros(1,N);
-for i=1:(N-1)
+for i=1:(N)
     %distance between satellite and object
     distance=object_location-(satelite_location+V_satelite*i*PRI);
     %distance between satellite and object in i-th moment
@@ -70,12 +70,37 @@ for i=1:(N-1)
     %doppler shift in i-th moment , needed to 
     f_doppler(i)=(2*V_rel*f_sin)/c;
     %echo recalculation 
-    tabdelt(nrprob+i*probe_per_pulse)=tabdelt(nrprob+i*probe_per_pulse) + object_RCS*exp( -4i*pi*d_norm/lambda  +  2i*pi*f_doppler(i) );
+    tabdelt(nrprob+(i-1)*sample_per_pulse)=tabdelt(nrprob+(i-1)*sample_per_pulse) + object_RCS*exp( -4i*pi*d_norm/lambda  +  2i*pi*f_doppler(i) );
     temp=conv(tabdelt,signal);
-    sygnOdb=temp(1:ileprob);
-    %s(i)=exp((-4i*pi*d_norm)/lambda);
+    sygnOdb=temp(1:N_sample);
+
+end
+%% compression
+sygnOdb_matrix=reshape(sygnOdb,sample_per_pulse,N)';
+range_compressed=zeros(N,sample_per_pulse);
+for i=1:N
+    range_compressed(i,:)=conv(sygnOdb_matrix(i,:),signal,'same');
 end
 
+% tu nic waznego , tylko wykresy
+figure;
+imagesc(abs(range_compressed));
+range_axis = (0:sample_per_pulse-1) * dR; % in meters
+azimuth_axis = (0:N-1) * PRI * 1000; % Approximate azimuth in meters
+figure;
+imagesc(range_axis, azimuth_axis, abs(range_compressed));
+
+%filtracja
+window=hamming(N);
+range_compressed=range_compressed.*window;
+
+%azimuth fft
+range_doppler_map=fftshift(fft(range_compressed,[],1),1);
+
+%azimuth ifft
+sar_image=ifft(range_doppler_map,[],1);
+figure;
+imagesc(abs(sar_image));
 %% plotting
 %plot
 figure;
@@ -85,8 +110,8 @@ plot(f_doppler);
 %plot(real(s));
 %hold on;
 %plot(imag(s));
-figure;
-plot(abs(sygnOdb),'b');
+%figure;
+%plot(abs(sygnOdb),'b');
 figure;
 plot(real(sygnOdb),'b');
 hold on;
