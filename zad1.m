@@ -22,7 +22,7 @@ t_sample=1/f_sample;
 %range resolution
 dR=c/(2*f_sample);
 %% point parameter - location & RCS
-object_location=[1e3,1e3,0]; %x,y,z in km
+object_location=[100,100,0]; %x,y,z in km
 object_RCS=0.5;
 %satelite parameters - location & movement speed
 satelite_location=[0,0,100e3]; %x,y,z in km
@@ -103,8 +103,8 @@ figure;
 imagesc(abs(sar_image));
 %% plotting
 %plot
-figure;
-plot(f_doppler);
+%figure;
+%plot(f_doppler);
 %this is a doppler shift for each measurement . Smallest one on the 50 km , where the target is
 %figure;
 %plot(real(s));
@@ -112,7 +112,7 @@ plot(f_doppler);
 %plot(imag(s));
 %figure;
 %plot(abs(sygnOdb),'b');
-figure;
-plot(real(sygnOdb),'b');
-hold on;
-plot(imag(sygnOdb),'r');
+%figure;
+%plot(real(sygnOdb),'b');
+%hold on;
+%plot(imag(sygnOdb),'r');
